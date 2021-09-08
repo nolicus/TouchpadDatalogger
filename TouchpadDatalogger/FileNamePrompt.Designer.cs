@@ -55,13 +55,14 @@
             this.btnStartRec.Location = new System.Drawing.Point(12, 56);
             this.btnStartRec.Name = "btnStartRec";
             this.btnStartRec.Size = new System.Drawing.Size(313, 23);
-            this.btnStartRec.TabIndex = 2;
+            this.btnStartRec.TabIndex = 1;
             this.btnStartRec.Text = "Start Recording";
             this.btnStartRec.UseVisualStyleBackColor = true;
             this.btnStartRec.Click += new System.EventHandler(this.btnStartRec_Click);
             // 
             // FileNamePrompt
             // 
+            this.AcceptButton = this.btnStartRec;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(337, 88);

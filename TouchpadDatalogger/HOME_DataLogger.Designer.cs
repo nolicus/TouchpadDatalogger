@@ -61,6 +61,7 @@
             // btnRecord
             // 
             this.btnRecord.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(192)))), ((int)(((byte)(192)))));
+            this.btnRecord.Enabled = false;
             this.btnRecord.Location = new System.Drawing.Point(12, 67);
             this.btnRecord.Name = "btnRecord";
             this.btnRecord.Size = new System.Drawing.Size(118, 30);
@@ -77,6 +78,7 @@
             this.btnRunPCFilter.Size = new System.Drawing.Size(118, 30);
             this.btnRunPCFilter.TabIndex = 8;
             this.btnRunPCFilter.Text = "Run Filter (PC)";
+            this.btnRunPCFilter.Visible = false;
             this.btnRunPCFilter.Click += new System.EventHandler(this.btnRunPCFilter_Click);
             // 
             // dgvGesturePlaylist
@@ -117,6 +119,7 @@
             this.btnApplyFilterTeensy.Size = new System.Drawing.Size(118, 30);
             this.btnApplyFilterTeensy.TabIndex = 9;
             this.btnApplyFilterTeensy.Text = "Enable Teensy Filter";
+            this.btnApplyFilterTeensy.Visible = false;
             this.btnApplyFilterTeensy.Click += new System.EventHandler(this.btnApplyFilterTeensy_Click);
             // 
             // HOME_DataLogger

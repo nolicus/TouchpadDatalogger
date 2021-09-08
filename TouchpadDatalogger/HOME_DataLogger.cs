@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -14,13 +16,13 @@ namespace TouchpadDatalogger
     {
         private Blueboard mBlueboard;
         private RecordMgr mRecordMgr;
+        private bool mIsRecording; 
+
         public HOME_DataLogger()
         {
             InitializeComponent();
 
             mBlueboard = new Blueboard();
-            mBlueboard.Connect();
-
             mRecordMgr = new RecordMgr();
 
             dgvGesturePlaylist.RowHeadersVisible = false;
@@ -28,16 +30,36 @@ namespace TouchpadDatalogger
 
             setInitButtonState();
             loadRecordedData();
+
+            mIsRecording = false; 
         }
 
         private void btnRecord_Click( object sender, EventArgs e )
         {
-            using (FileNamePrompt formFileNamePrompt =  new FileNamePrompt())
+            if ( !mIsRecording )
             {
-                Visible = false;
-                formFileNamePrompt.StartPosition = StartPosition;
-                formFileNamePrompt.ShowDialog();
-                Visible = true; 
+                using ( FileNamePrompt formFileNamePrompt = new FileNamePrompt() )
+                {
+                    Visible = false;
+                    formFileNamePrompt.StartPosition = StartPosition;
+                    formFileNamePrompt.ShowDialog();
+                    Visible = true;
+
+                    mIsRecording = true; 
+                    btnRecord.Text = "Stop Recording";
+
+                    mRecordMgr.mCurrentFilename = FileNamePrompt.Filename;
+
+                    Thread thread = new Thread( recordData );
+                    thread.Start();
+                }
+            }
+            else
+            {
+                mIsRecording = false;
+                btnRecord.Text = "Record";
+
+                loadRecordedData();
             }
         }
 
@@ -59,6 +81,19 @@ namespace TouchpadDatalogger
 
         }
 
+        private void recordData()
+        { 
+            SampleUtil samp; 
+
+            while(mIsRecording)
+            {
+                if(mBlueboard.GetSample( out samp ))
+                {
+                    mRecordMgr.SaveSampleToFile( samp );
+                }
+            }
+        }
+
         private void setInitButtonState()
         {
             if(mBlueboard.IsConnected)
@@ -75,7 +110,8 @@ namespace TouchpadDatalogger
 
         private void loadRecordedData()
         {
-            flushRows(); 
+            flushRows();
+            mRecordMgr.LoadRecordedFiles(); 
             foreach(Tuple<string, string, string> val in mRecordMgr.RecordedFiles)
             {
                 int row = dgvGesturePlaylist.Rows.Add( val.Item2, val.Item3 );

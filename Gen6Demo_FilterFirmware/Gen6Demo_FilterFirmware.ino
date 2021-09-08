@@ -15,167 +15,196 @@ bool dataLoggerPrint_mode_g = true; /** <toggle for printing packets for datalog
 
 void setup()
 {
-  Serial.begin(115200);
-  while(!Serial);
-  
-  API_Hardware_init();       //Initialize board hardware
-  
-  API_Hardware_PowerOn();    //Power up the board
-  delay(2);                  //delay for power up
-  
-  // initialize i2c connection at 400kHz 
-  API_C3_init(PROJECT_I2C_FREQUENCY, ALPS_SLAVE_ADDR); 
-  
-  delay(50);                 //delay before reading registers after startup
-  
-  // Collect information about the system and print to Serial
-  systemInfo_t sysInfo;
-  API_C3_readSystemInfo(&sysInfo);
-  printSystemInfo(&sysInfo);
-  
-  API_C3_setPtpMode();
+    Serial.begin(115200);
+    delay(2000);
 
-  initialize_saved_reports(); //initialize state for determining touch events
-  pinMode(13, OUTPUT);
-  digitalWrite(13, LOW);
+    API_Hardware_init();       //Initialize board hardware
+    
+    API_Hardware_PowerOn();    //Power up the board
+    delay(2);                  //delay for power up
+    
+    // initialize i2c connection at 400kHz 
+    API_C3_init(PROJECT_I2C_FREQUENCY, ALPS_SLAVE_ADDR); 
+    
+    delay(50);                 //delay before reading registers after startup
+    
+    // Collect information about the system and print to Serial
+    systemInfo_t sysInfo;
+    API_C3_readSystemInfo(&sysInfo);
+    //   printSystemInfo(&sysInfo);
+    
+    API_C3_setPtpMode();
+
+    initialize_saved_reports(); //initialize state for determining touch events
+    pinMode(13, OUTPUT);
+    digitalWrite(13, LOW);
 }
 
+
+uint16_t heartbeatCounter_serial = 0; 
 /** The main structure of the loop is: 
     Wait for the Data Ready line to assert. When it does, read the data (which clears DR) and analyze the data.
     The rest is just a user interface to change various settings.
     */
 void loop()
 {
-  /* Handle incoming messages from module */
-  if(API_C3_DR_Asserted())          // When Data is ready
-  {
-    HID_report_t report;
-    API_C3_getReport(&report);              // read the report
-    API_KalmanFilter_processData(&report);   // Apply Kalmanfilter to Report
+    /* Handle incoming messages from module */
+    if (API_C3_DR_Asserted()) // When Data is ready
+    {
+        HID_report_t *report = new HID_report_t();
+        API_C3_getReport(report);             // read the report
+        API_KalmanFilter_processData(report); // Apply Kalmanfilter to Report
 
-    /* Interpret report from module */
-    if(eventPrint_mode_g)
-    {
-        printEvent(&report);
-    }
-    if(dataPrint_mode_g)
-    {
-        printDataReport(&report);
-    }
-    if(filterPrint_mode_g)
-    {
-        printFilterReport(&report);
-    }
-    if(dataLoggerPrint_mode_g)
-    {
-        printDataLoggerPacket(&report);
-    }
-  }
+        /* Interpret report from module */
+        if (eventPrint_mode_g)
+        {
+            printEvent(report);
+        }
+        if (dataPrint_mode_g)
+        {
+            printDataReport(report);
+        }
+        if (filterPrint_mode_g)
+        {
+            printFilterReport(report);
+        }
+        if (dataLoggerPrint_mode_g)
+        {
+            printDataLoggerPacket(report);
+        }
 
-  /* Handle incoming messages from user on serial */
-  if(Serial.available())
-  {
-    char rxChar = Serial.read();
-    switch(rxChar)
-    {
-      case 'c':
-          Serial.println(F("Compensation Forced"));
-          API_C3_forceComp();
-          break;
-          
-      case 'C':
-          Serial.println(F("Factory Calibrate... "));
-          if(API_C3_factoryCalibrate())
-          {
-              Serial.println(F("Done"));
-          }
-          else
-          {
-              Serial.println(F("Failed")); //Hardware timeout (Did the module disconnect?) 
-          }
-          break;
-          
-      case 'f':
-          Serial.println(F("Feed Enabled"));
-          API_C3_enableFeed();
-          break;
-          
-      case 'F':
-          Serial.println(F("Feed Disabled"));
-          API_C3_disableFeed();
-          break;
-          
-      case 'a':
-          Serial.println(F("Absolute Mode Set"));
-          // API_C3_setCRQ_AbsoluteMode();
-          API_C3_setPtpMode();
-          break;
-          
-      case 'r':
-          Serial.println(F("Relative Mode Set"));
-          API_C3_setRelativeMode();
-          break;
-          
-      case 's':
-          systemInfo_t sysInfo;
-          API_C3_readSystemInfo(&sysInfo);
-          printSystemInfo(&sysInfo);
-          break;
-          
-      case 'p':
-          Serial.println(F("Settings saved to flash"));
-          API_C3_saveConfig();
-          break;
-          
-      case 't':
-          Serial.println(F("Tracking Enabled"));
-          API_C3_enableTracking();
-          break;
-          
-      case 'T':
-          Serial.println(F("Tracking Disabled"));
-          API_C3_disableTracking();
-          break;
-          
-      case 'v':
-          Serial.println(F("Compensation Enabled"));
-          API_C3_enableComp();
-          break;
-          
-      case 'V':
-          Serial.println(F("Compensation Disabled"));
-          API_C3_disableComp();
-          break;
-          
-      //Print modes
-      case 'd':
-          Serial.println(F("Data Printing turned on"));
-          dataPrint_mode_g = true;
-          break;
-          
-      case 'D':
-          Serial.println(F("Data Printing turned off"));
-          dataPrint_mode_g = false;
-          break;
-          
-      case 'e':
-          Serial.println(F("Event Printing turned on"));
-          eventPrint_mode_g = true;
-          break;
-          
-      case 'E':
-          Serial.println(F("Event Printing turned off"));
-          eventPrint_mode_g = false;
-          break;
-      
-      case '?':
-      case 'h':
-      case 'H':
-      default:
-          printHelpTable();
-          break;
+        delete report;
+        report = NULL;
+
+        // HID_report_t report;
+        // API_C3_getReport(&report);             // read the report
+        // API_KalmanFilter_processData(&report); // Apply Kalmanfilter to Report
+
+        // /* Interpret report from module */
+        // if (eventPrint_mode_g)
+        // {
+        //     printEvent(&report);
+        // }
+        // if (dataPrint_mode_g)
+        // {
+        //     printDataReport(&report);
+        // }
+        // if (filterPrint_mode_g)
+        // {
+        //     printFilterReport(&report);
+        // }
+        // if (dataLoggerPrint_mode_g)
+        // {
+        //     printDataLoggerPacket(&report);
+        // }
+
+
     }
-  }
+
+    /* Handle incoming messages from user on serial */
+    if(Serial.available())
+    {
+        char rxChar = Serial.read();
+        switch(rxChar)
+        {
+        case 'c':
+            Serial.println(F("Compensation Forced"));
+            API_C3_forceComp();
+            break;
+            
+        case 'C':
+            Serial.println(F("Factory Calibrate... "));
+            if(API_C3_factoryCalibrate())
+            {
+                Serial.println(F("Done"));
+            }
+            else
+            {
+                Serial.println(F("Failed")); //Hardware timeout (Did the module disconnect?) 
+            }
+            break;
+            
+        case 'f':
+            Serial.println(F("Feed Enabled"));
+            API_C3_enableFeed();
+            break;
+            
+        case 'F':
+            Serial.println(F("Feed Disabled"));
+            API_C3_disableFeed();
+            break;
+            
+        case 'a':
+            Serial.println(F("Absolute Mode Set"));
+            // API_C3_setCRQ_AbsoluteMode();
+            API_C3_setPtpMode();
+            break;
+            
+        case 'r':
+            Serial.println(F("Relative Mode Set"));
+            API_C3_setRelativeMode();
+            break;
+            
+        case 's':
+            systemInfo_t sysInfo;
+            API_C3_readSystemInfo(&sysInfo);
+            printSystemInfo(&sysInfo);
+            break;
+            
+        case 'p':
+            Serial.println(F("Settings saved to flash"));
+            API_C3_saveConfig();
+            break;
+            
+        case 't':
+            Serial.println(F("Tracking Enabled"));
+            API_C3_enableTracking();
+            break;
+            
+        case 'T':
+            Serial.println(F("Tracking Disabled"));
+            API_C3_disableTracking();
+            break;
+            
+        case 'v':
+            Serial.println(F("Compensation Enabled"));
+            API_C3_enableComp();
+            break;
+            
+        case 'V':
+            Serial.println(F("Compensation Disabled"));
+            API_C3_disableComp();
+            break;
+            
+        //Print modes
+        case 'd':
+            Serial.println(F("Data Printing turned on"));
+            dataPrint_mode_g = true;
+            break;
+            
+        case 'D':
+            Serial.println(F("Data Printing turned off"));
+            dataPrint_mode_g = false;
+            break;
+            
+        case 'e':
+            Serial.println(F("Event Printing turned on"));
+            eventPrint_mode_g = true;
+            break;
+            
+        case 'E':
+            Serial.println(F("Event Printing turned off"));
+            eventPrint_mode_g = false;
+            break;
+        
+        case '?':
+        case 'h':
+        case 'H':
+        default:
+            printHelpTable();
+            break;
+        }
+    }
 }
 
 /******** Functions for Printing Data ***********/
@@ -393,7 +422,7 @@ void printDataLoggerPacket(HID_report_t *report)
     buffer[13] = checksum; 
 
     // Send data
-    Serial.write(buffer, 15);
+    Serial.write(buffer, 16);
 
     // Flash the LED (DEBUG)
     digitalWrite(13, HIGH);

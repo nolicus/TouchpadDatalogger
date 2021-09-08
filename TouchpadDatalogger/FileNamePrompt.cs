@@ -13,25 +13,29 @@ namespace TouchpadDatalogger
 {
     public partial class FileNamePrompt : Form
     {
+        public static string Filename; 
         public FileNamePrompt()
         {
             InitializeComponent();
-            label1.Text = "Record Name:"; 
+            label1.Text = "Record Name:";
+            Filename = ""; 
         }
 
         private void btnStartRec_Click( object sender, EventArgs e )
         {
-            string input = tbRecordName.Text;
-            input = input.Replace( ' ', '_' );
+            Filename = tbRecordName.Text;
+            Filename = Filename.Replace( ' ', '_' );
 
-            if ( isValid(input) )
+            if ( isValid( Filename ) )
             {
-                // execute start recording process
+                Filename += ".csv";
+                Close(); 
             }
             else
             {
                 // update label with error
-                label1.Text = "Record Name: ERROR - INVALID INPUT *No Special Chars*"; 
+                label1.Text = "Record Name: ERROR - INVALID INPUT *No Special Chars*";
+                Filename = ""; 
             }
         }
 

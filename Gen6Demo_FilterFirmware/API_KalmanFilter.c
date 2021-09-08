@@ -13,6 +13,6 @@ void API_KalmanFilter_processData(HID_report_t* report)
     // display on the serial port. 
     report->filter.filteredX = report->ptp.x + 50;
     report->filter.filteredY = report->ptp.y + 50;
-
+    
     // FILTER CODE GOES HERE // 
 }

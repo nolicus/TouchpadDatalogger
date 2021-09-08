@@ -23,7 +23,6 @@ namespace TouchpadDatalogger
         public Blueboard()
         {
             mIsConnected = false;
-
             Connect();
         }
 
@@ -36,13 +35,15 @@ namespace TouchpadDatalogger
                 mComPort = new SerialPort( teensySerial );
                 if(mComPort != null)
                 {
-                    try
+                    if( openSerialPort() )
                     {
-                        mComPort.Open();
-                        mComPort.ReadTimeout = SerialPort.InfiniteTimeout;  // infinite is best for debug
-                        mIsConnected = mComPort.IsOpen;
+                        System.Diagnostics.Debug.WriteLine( "COM port is OPEN" );
                     }
-                    catch { }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine( "COM port is CLOSED" );
+
+                    }
                 }
             }
             else
@@ -64,8 +65,14 @@ namespace TouchpadDatalogger
                 getPacket(out packet); 
                 if(verifyPacket(packet))
                 {
+                    System.Diagnostics.Debug.WriteLine( "!valid samp!" );
+
                     samp.Parse(packet);
                     result = true; 
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine( "!invalid samp!" );
                 }
             }
 
@@ -73,44 +80,72 @@ namespace TouchpadDatalogger
         }
 
         // ******************************** PRIVATE FUNC
-        private void getPacket( out List<byte> packet)
+        private bool openSerialPort()
+        {
+            if ( mComPort.IsOpen )           //Close port if it is open 
+            {
+                mComPort.Close();
+            }
+
+            // Initialize all serial port parameters to match teensy
+            mComPort.BaudRate = 115200;
+            mComPort.Parity = Parity.None;
+            mComPort.DataBits = 8;
+            mComPort.StopBits = StopBits.One;
+            mComPort.Handshake = Handshake.RequestToSend;
+            mComPort.ReadTimeout = SerialPort.InfiniteTimeout;  // infinite is best for debug
+
+            // Open up the com port
+            mComPort.Open();
+            mIsConnected = mComPort.IsOpen;
+
+            return mIsConnected; 
+        }
+
+        private void getPacket( out List<byte> packet )
         {
             packet = new List<byte>();
 
-            byte[] buffer = new byte[4];
-            bool error = false;
+            mComPort.ReadTimeout = SerialPort.InfiniteTimeout;
+            int count = 0;
 
-            do
+            // Debug -- Check to see if things are connected
+            if ( !mComPort.IsOpen || openSerialPort() ) 
             {
-                try
-                {
-                    error = mComPort.Read( buffer, 0, 1 ) != 1;
-                }
-                catch
-                {
-                    error = true;
-                    break;
-                }
+                System.Diagnostics.Debug.WriteLine( "COM port getPacket() is OPEN" );
 
-                if ( error == false )
+                do
                 {
-                    packet.Add( buffer[0] );
-                }
-            } while ( error == false && packet.Count < SIMPLE_PACKET_SIZE );
+                    int val = mComPort.ReadByte();
+                    System.Diagnostics.Debug.WriteLine( "{0} - Val = {1:X}", ++count, val );
+
+                    if ( val != -1 )
+                    {
+                        packet.Add( (byte) val );
+                    }
+
+                } while ( packet.Count < SIMPLE_PACKET_SIZE );
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine( "COM port getPacket() is CLOSED" );
+            }
+            // Debug -- finish stuff
         }
 
         private bool verifyPacket( List<byte> packet)
         {
             bool result = false;
 
-            if(packet.Count < SIMPLE_PACKET_SIZE)
+            if (packet.Count == SIMPLE_PACKET_SIZE)
             {
                 // Verify Header and Footer
-                if( packet[0] == 0x6A && 
+                if ( packet[0] == 0x6A && 
                     packet[1] == 0xD5 &&
                     packet[SIMPLE_PACKET_SIZE - 2] == 0x17 && 
                     packet[SIMPLE_PACKET_SIZE - 1] == 0xE2 )
                 {
+
                     byte checksum = 0; 
                     for( int i = 0; i < SIMPLE_PACKET_SIZE - 3; i++ )
                     {
@@ -123,17 +158,17 @@ namespace TouchpadDatalogger
                     }
                     else
                     {
-                        // ERROR: Checksum was incorrect
+                        System.Diagnostics.Debug.WriteLine( "Checksum: FAIL" );
                     }
                 }
                 else
                 {
-                    // ERROR: Header and Footer were incorrect
+                    System.Diagnostics.Debug.WriteLine( "Header Footer Check: FAIL" );
                 }
             }
             else
             {
-                // ERROR: Header and Footer were incorrect
+                System.Diagnostics.Debug.WriteLine( "Packet Size: FAIL" );
             }
 
             return result; 
