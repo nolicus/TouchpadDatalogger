@@ -51,54 +51,27 @@ void loop()
     /* Handle incoming messages from module */
     if (API_C3_DR_Asserted()) // When Data is ready
     {
-        HID_report_t *report = new HID_report_t();
-        API_C3_getReport(report);             // read the report
-        API_KalmanFilter_processData(report); // Apply Kalmanfilter to Report
+        HID_report_t report;
+        API_C3_getReport(&report);             // read the report
+        FilterReport_t fltrData = API_KalmanFilter_processData(&report); // filter the data
 
         /* Interpret report from module */
         if (eventPrint_mode_g)
         {
-            printEvent(report);
+            printEvent(&report);
         }
         if (dataPrint_mode_g)
         {
-            printDataReport(report);
+            printDataReport(&report);
         }
         if (filterPrint_mode_g)
         {
-            printFilterReport(report);
+            printFilterReport(&report);
         }
         if (dataLoggerPrint_mode_g)
         {
-            printDataLoggerPacket(report);
+            calcPrintDataLoggerPacket(&report, fltrData);
         }
-
-        delete report;
-        report = NULL;
-
-        // HID_report_t report;
-        // API_C3_getReport(&report);             // read the report
-        // API_KalmanFilter_processData(&report); // Apply Kalmanfilter to Report
-
-        // /* Interpret report from module */
-        // if (eventPrint_mode_g)
-        // {
-        //     printEvent(&report);
-        // }
-        // if (dataPrint_mode_g)
-        // {
-        //     printDataReport(&report);
-        // }
-        // if (filterPrint_mode_g)
-        // {
-        //     printFilterReport(&report);
-        // }
-        // if (dataLoggerPrint_mode_g)
-        // {
-        //     printDataLoggerPacket(&report);
-        // }
-
-
     }
 
     /* Handle incoming messages from user on serial */
@@ -368,6 +341,8 @@ void printPtpReport(HID_report_t * report)
 /** Run's and prints any filtered filtered data based on the given PTP reports*/ 
 void printFilterReport(HID_report_t *report)
 {
+    // API_KalmanFilter_processData(report); // Apply Kalmanfilter to Report
+
     Serial.print(F("Filtered X:\t"));
     Serial.println(report->filter.filteredX);
     Serial.print(F("Filtered Y:\t"));
@@ -376,8 +351,10 @@ void printFilterReport(HID_report_t *report)
 }
 
 /** Run's and prints any filtered filtered data based on the given PTP reports*/
-void printDataLoggerPacket(HID_report_t *report)
+void calcPrintDataLoggerPacket(HID_report_t *report, FilterReport_t fltrData)
 {
+    // API_KalmanFilter_processData(report); // Apply Kalmanfilter to Report
+
     uint8_t buffer[16];
 
     // clear packet
@@ -406,11 +383,11 @@ void printDataLoggerPacket(HID_report_t *report)
 
     buffer[8] = report->ptp.confidence;
 
-    buffer[9] = report->filter.filteredX & 0x00FF;
-    buffer[10] = (report->filter.filteredX & 0xFF00) >> 8;
+    buffer[9] = fltrData.filteredX & 0x00FF;
+    buffer[10] = (fltrData.filteredX & 0xFF00) >> 8;
 
-    buffer[11] = report->filter.filteredY & 0x00FF;
-    buffer[12] = (report->filter.filteredY & 0xFF00) >> 8;
+    buffer[11] = fltrData.filteredY & 0x00FF;
+    buffer[12] = (fltrData.filteredY & 0xFF00) >> 8;
 
     // Checksum
     uint8_t checksum = 0; 
