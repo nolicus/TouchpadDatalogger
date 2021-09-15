@@ -12,7 +12,10 @@ bool dataLoggerPrint_mode_g = true; /** <toggle for printing packets for datalog
 
 void setup()
 {
-    Serial.begin(115200);
+    Serial.begin(2000000);
+    delay(2000);
+
+    Serial1.begin(115200);
     delay(2000);
 
     API_Hardware_init();       //Initialize board hardware
@@ -28,10 +31,12 @@ void setup()
     API_C3_readSystemInfo(&sysInfo);
     API_C3_setPtpMode();
 
-    initialize_saved_reports(); //initialize state for determining touch events
     pinMode(13, OUTPUT);
     digitalWrite(13, LOW);
 }
+
+uint32_t startTime = 0;
+uint8_t debounceLEDCount = 0; 
 
 /** The main structure of the loop is: 
     Wait for the Data Ready line to assert. When it does, read the data (which clears DR) and analyze the data.
@@ -47,25 +52,47 @@ void loop()
         FilterReport_t fltrData = API_KalmanFilter_processData(&report); // filter the data
 
         /* Interpret report from module */
-
         if (dataLoggerPrint_mode_g)
         {
             calcPrintDataLoggerPacket(&report, fltrData);
         }
+
+        // PRINT SAMPLE RATE //
+        // uint32_t samplePeriod = millis() - startTime;
+        // uint32_t sampsPerSecond = 1000 / samplePeriod;
+
+        // Serial.print("Samples Per Second: ");
+        // Serial.print(sampsPerSecond, DEC);
+        // Serial.print("\r\n");
+
+        // Serial.print("Sample Delay: ");
+        // Serial.print(samplePeriod, DEC);
+        // Serial.print("\r\n");
+
+        // Serial.println();  
+
+        // startTime = millis();
     }
 
     /* Handle incoming messages from user on serial */
-    // if(Serial.available())
-    // {
-    //     char rxChar = Serial.read();
-    //     switch(rxChar)
-    //     {
-    //     default:
-    //         break;
-    //     }
-    // }
+    if(Serial.available())
+    {
+        char rxChar = Serial.read();
 
-    // PRINT SAMPLE RATE // 
+        // uint8_t cmd[50];
+        // getComand(cmd);
+        // if(commandIsValid(cmd))
+        // {
+        //      uint16_t exeCmd = parseCmd(cmd);
+        //      switch (exeCmd)
+        //      {
+                // case 0:     // start streaming data
+                // case 1:     // end streaming data
+        //      default:
+        //          break;
+        //      }
+        // }
+    }
 }
 
 /******** Functions for Printing Data ***********/
@@ -98,7 +125,6 @@ void printPtpReport(HID_report_t * report)
 void printFilterReport(HID_report_t *report)
 {
     // API_KalmanFilter_processData(report); // Apply Kalmanfilter to Report
-
     Serial.print(F("Filtered X:\t"));
     Serial.println(report->filter.filteredX);
     Serial.print(F("Filtered Y:\t"));
@@ -156,9 +182,4 @@ void calcPrintDataLoggerPacket(HID_report_t *report, FilterReport_t fltrData)
 
     // Send data
     Serial.write(buffer, 16);
-
-    // Flash the LED (DEBUG)
-    digitalWrite(13, HIGH);
-    delay(75);
-    digitalWrite(13, LOW); 
 }

@@ -37,7 +37,7 @@ namespace TouchpadDatalogger
                 {
                     if( openSerialPort() )
                     {
-                        System.Diagnostics.Debug.WriteLine( "COM port is OPEN" );
+                        //System.Diagnostics.Debug.WriteLine( "COM port is OPEN" );
                     }
                     else
                     {
@@ -65,14 +65,12 @@ namespace TouchpadDatalogger
                 getPacket(out packet); 
                 if(verifyPacket(packet))
                 {
-                    System.Diagnostics.Debug.WriteLine( "!valid samp!" );
-
                     samp.Parse(packet);
                     result = true; 
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine( "!invalid samp!" );
+                    //System.Diagnostics.Debug.WriteLine( "!invalid samp!" );
                 }
             }
 
@@ -88,7 +86,7 @@ namespace TouchpadDatalogger
             }
 
             // Initialize all serial port parameters to match teensy
-            mComPort.BaudRate = 115200;
+            mComPort.BaudRate = 2000000;
             mComPort.Parity = Parity.None;
             mComPort.DataBits = 8;
             mComPort.StopBits = StopBits.One;
@@ -107,17 +105,17 @@ namespace TouchpadDatalogger
             packet = new List<byte>();
 
             mComPort.ReadTimeout = SerialPort.InfiniteTimeout;
-            int count = 0;
+            //int count = 0;
 
             // Debug -- Check to see if things are connected
             if ( !mComPort.IsOpen || openSerialPort() ) 
             {
-                System.Diagnostics.Debug.WriteLine( "COM port getPacket() is OPEN" );
+                //System.Diagnostics.Debug.WriteLine( "COM port getPacket() is OPEN" );
 
                 do
                 {
                     int val = mComPort.ReadByte();
-                    System.Diagnostics.Debug.WriteLine( "{0} - Val = {1:X}", ++count, val );
+                    //System.Diagnostics.Debug.WriteLine( "{0} - Val = {1:X}", ++count, val );
 
                     if ( val != -1 )
                     {

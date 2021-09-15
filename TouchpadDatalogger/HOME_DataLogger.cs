@@ -1,11 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Text;
+using System.IO.Ports;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -16,7 +10,8 @@ namespace TouchpadDatalogger
     {
         private Blueboard mBlueboard;
         private RecordMgr mRecordMgr;
-        private bool mIsRecording; 
+        private bool mIsRecording;
+        SerialPort mComPort; 
 
         public HOME_DataLogger()
         {

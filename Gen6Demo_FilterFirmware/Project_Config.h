@@ -15,7 +15,7 @@ extern "C" {
 #define CONFIG_PROJECT_NAME "KalmanFilterDevKit"
 
 #define PROJECT_MAX_PACKET_SIZE 53
-#define PROJECT_I2C_FREQUENCY 400000
+#define PROJECT_I2C_FREQUENCY 1000000
 
 #endif // __PROJECT_CONFIG_H__
 
