@@ -83,6 +83,8 @@ void printPtpFilterReport(HID_report_t &hidReport, FilterReport_t &fltrData)
     Serial.print(fltrData.filteredX);
     Serial.print(",");
     Serial.print(fltrData.filteredY); //Total number of contacts to be reported in a given report
+    Serial.print(",");
+    Serial.print(millis());
     Serial.println();
 }
 
@@ -98,5 +100,6 @@ void printPtpFilterHeader()
     Serial.print("Buttons,");
     Serial.print("Contact Count,");
     Serial.print("Filtered X,");
-    Serial.println("Filtered Y");
+    Serial.print("Filtered Y,");
+    Serial.println("Milli Secs");
 }
